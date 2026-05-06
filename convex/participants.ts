@@ -1,5 +1,13 @@
 import { v } from "convex/values";
-import { mutation } from "./_generated/server";
+import {
+  action,
+  internalMutation,
+  internalQuery,
+  mutation,
+} from "./_generated/server";
+import { api, internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
+import { sendInvite } from "./email";
 import { requireAdminUserId, generateMagicLinkToken } from "./lib/auth";
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
@@ -144,5 +152,121 @@ export const update = mutation({
     if (Object.keys(cleanPatch).length === 0) return;
 
     await ctx.db.patch(args.id, cleanPatch);
+  },
+});
+
+export const _getForInvite = internalQuery({
+  args: { id: v.id("participants") },
+  handler: async (ctx, args) => {
+    const userId = await requireAdminUserId(ctx);
+    const participant = await ctx.db.get(args.id);
+    if (!participant) throw new Error("Participant not found");
+    const workshop = await ctx.db.get(participant.workshopId);
+    if (!workshop) throw new Error("Workshop not found");
+    if (workshop.adminUserId !== userId) throw new Error("Not authorized");
+    return { workshop, participant };
+  },
+});
+
+export const _recordInvite = internalMutation({
+  args: {
+    workshopId: v.id("workshops"),
+    participantId: v.id("participants"),
+    result: v.union(
+      v.object({ ok: v.literal(true), messageId: v.string() }),
+      v.object({ ok: v.literal(false), error: v.string() }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    if (args.result.ok) {
+      await ctx.db.insert("emailLog", {
+        workshopId: args.workshopId,
+        participantId: args.participantId,
+        emailType: "invite",
+        sentAt: now,
+        status: "sent",
+        resendMessageId: args.result.messageId,
+        errorMessage: null,
+      });
+      await ctx.db.patch(args.participantId, { invitedAt: now });
+      await ctx.db.insert("events", {
+        workshopId: args.workshopId,
+        actorType: "system",
+        actorId: null,
+        eventType: "participant.invited",
+        payload: { messageId: args.result.messageId },
+        timestamp: now,
+      });
+    } else {
+      await ctx.db.insert("emailLog", {
+        workshopId: args.workshopId,
+        participantId: args.participantId,
+        emailType: "invite",
+        sentAt: now,
+        status: "failed",
+        resendMessageId: null,
+        errorMessage: args.result.error,
+      });
+      await ctx.db.insert("events", {
+        workshopId: args.workshopId,
+        actorType: "system",
+        actorId: null,
+        eventType: "participant.invite_failed",
+        payload: { error: args.result.error },
+        timestamp: now,
+      });
+    }
+  },
+});
+
+export const addAndInvite = action({
+  args: {
+    workshopId: v.id("workshops"),
+    email: v.string(),
+    name: v.optional(v.union(v.string(), v.null())),
+    role: v.optional(v.union(v.string(), v.null())),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
+    participantId: Id<"participants">;
+    sent: boolean;
+    error: string | null;
+  }> => {
+    const participantId = await ctx.runMutation(api.participants.add, args);
+    const data = await ctx.runQuery(internal.participants._getForInvite, {
+      id: participantId,
+    });
+    if (data.workshop.status !== "phase1_active") {
+      return { participantId, sent: false, error: null };
+    }
+
+    const baseUrl = process.env.SITE_URL ?? "";
+    const result = await sendInvite({
+      to: data.participant.email,
+      subjectTemplate: data.workshop.emailTemplates.invite.subject,
+      bodyTemplate: data.workshop.emailTemplates.invite.body,
+      vars: {
+        participantName: data.participant.name,
+        workshopName: data.workshop.name,
+        magicLink: `${baseUrl}/p/${data.participant.magicLinkToken}`,
+      },
+    });
+
+    await ctx.runMutation(internal.participants._recordInvite, {
+      workshopId: data.workshop._id,
+      participantId,
+      result: result.ok
+        ? { ok: true as const, messageId: result.messageId }
+        : { ok: false as const, error: result.error },
+    });
+
+    return {
+      participantId,
+      sent: result.ok,
+      error: result.ok ? null : result.error,
+    };
   },
 });

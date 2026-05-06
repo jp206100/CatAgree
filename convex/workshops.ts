@@ -1,6 +1,15 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import {
+  action,
+  internalMutation,
+  mutation,
+  query,
+} from "./_generated/server";
+import { internal } from "./_generated/api";
+import { sendInvite } from "./email";
 import { requireAdminUserId, DEFAULT_INVITE_TEMPLATE } from "./lib/auth";
+
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 export const create = mutation({
   args: {
@@ -189,5 +198,161 @@ export const getForAdmin = query({
       .collect();
 
     return { workshop, participants };
+  },
+});
+
+export const _startLaunch = internalMutation({
+  args: { id: v.id("workshops") },
+  handler: async (ctx, args) => {
+    const userId = await requireAdminUserId(ctx);
+    const workshop = await ctx.db.get(args.id);
+    if (!workshop) throw new Error("Workshop not found");
+    if (workshop.adminUserId !== userId) throw new Error("Not authorized");
+    if (workshop.status !== "draft") {
+      throw new Error("Only draft workshops can be launched");
+    }
+    if (workshop.name.trim().length === 0) {
+      throw new Error("Workshop name is required");
+    }
+    if (!workshop.emailTemplates.invite.body.includes("{{magicLink}}")) {
+      throw new Error(
+        "Invite template body must contain the {{magicLink}} placeholder",
+      );
+    }
+
+    const participants = await ctx.db
+      .query("participants")
+      .withIndex("by_workshop", (q) => q.eq("workshopId", args.id))
+      .collect();
+    if (participants.length === 0) {
+      throw new Error("Add at least one participant before launching");
+    }
+
+    const launchedAt = Date.now();
+    const expiresAt = launchedAt + THIRTY_DAYS_MS;
+
+    await ctx.db.patch(args.id, {
+      status: "phase1_active",
+      launchedAt,
+    });
+    for (const p of participants) {
+      await ctx.db.patch(p._id, { magicLinkExpiresAt: expiresAt });
+    }
+
+    return {
+      workshopName: workshop.name,
+      subjectTemplate: workshop.emailTemplates.invite.subject,
+      bodyTemplate: workshop.emailTemplates.invite.body,
+      participants: participants.map((p) => ({
+        _id: p._id,
+        email: p.email,
+        name: p.name,
+        magicLinkToken: p.magicLinkToken,
+      })),
+    };
+  },
+});
+
+export const _completeLaunch = internalMutation({
+  args: {
+    id: v.id("workshops"),
+    sent: v.number(),
+    failed: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await requireAdminUserId(ctx);
+    await ctx.db.insert("events", {
+      workshopId: args.id,
+      actorType: "admin",
+      actorId: userId,
+      eventType: "workshop.launched",
+      payload: { sent: args.sent, failed: args.failed },
+      timestamp: Date.now(),
+    });
+  },
+});
+
+export const launch = action({
+  args: { id: v.id("workshops") },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{ sent: number; failed: number }> => {
+    const data = await ctx.runMutation(internal.workshops._startLaunch, {
+      id: args.id,
+    });
+
+    const baseUrl = process.env.SITE_URL ?? "";
+    let sent = 0;
+    let failed = 0;
+
+    for (const p of data.participants) {
+      const result = await sendInvite({
+        to: p.email,
+        subjectTemplate: data.subjectTemplate,
+        bodyTemplate: data.bodyTemplate,
+        vars: {
+          participantName: p.name,
+          workshopName: data.workshopName,
+          magicLink: `${baseUrl}/p/${p.magicLinkToken}`,
+        },
+      });
+
+      await ctx.runMutation(internal.participants._recordInvite, {
+        workshopId: args.id,
+        participantId: p._id,
+        result: result.ok
+          ? { ok: true as const, messageId: result.messageId }
+          : { ok: false as const, error: result.error },
+      });
+
+      if (result.ok) sent += 1;
+      else failed += 1;
+    }
+
+    await ctx.runMutation(internal.workshops._completeLaunch, {
+      id: args.id,
+      sent,
+      failed,
+    });
+
+    return { sent, failed };
+  },
+});
+
+export const retryInvite = action({
+  args: { participantId: v.id("participants") },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{ ok: boolean; error: string | null }> => {
+    const data = await ctx.runQuery(internal.participants._getForInvite, {
+      id: args.participantId,
+    });
+    if (data.workshop.status !== "phase1_active") {
+      throw new Error("Can only retry invites for active workshops");
+    }
+
+    const baseUrl = process.env.SITE_URL ?? "";
+    const result = await sendInvite({
+      to: data.participant.email,
+      subjectTemplate: data.workshop.emailTemplates.invite.subject,
+      bodyTemplate: data.workshop.emailTemplates.invite.body,
+      vars: {
+        participantName: data.participant.name,
+        workshopName: data.workshop.name,
+        magicLink: `${baseUrl}/p/${data.participant.magicLinkToken}`,
+      },
+    });
+
+    await ctx.runMutation(internal.participants._recordInvite, {
+      workshopId: data.workshop._id,
+      participantId: args.participantId,
+      result: result.ok
+        ? { ok: true as const, messageId: result.messageId }
+        : { ok: false as const, error: result.error },
+    });
+
+    return { ok: result.ok, error: result.ok ? null : result.error };
   },
 });
