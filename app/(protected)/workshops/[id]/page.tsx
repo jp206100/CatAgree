@@ -7,6 +7,7 @@ import { use, useEffect } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
+import { Cockpit } from "../_components/cockpit";
 
 export default function WorkshopDetailPage({
   params,
@@ -96,52 +97,5 @@ export default function WorkshopDetailPage({
     );
   }
 
-  // phase1_active — minimal cockpit placeholder. Full cockpit lands in chunk 4.
-  return (
-    <main className="flex-1 max-w-5xl mx-auto w-full px-6 py-10">
-      <Link
-        href="/dashboard"
-        className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-4"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="w-4 h-4"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-        >
-          <path
-            fillRule="evenodd"
-            d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z"
-            clipRule="evenodd"
-          />
-        </svg>
-        Back to dashboard
-      </Link>
-
-      <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 mb-5">
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <h1 className="text-xl font-semibold text-gray-900">{w.name}</h1>
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-50 border border-green-100 text-green-700 text-xs font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-            Phase 1 active
-          </span>
-        </div>
-        {w.description && (
-          <p className="text-sm text-gray-500 mt-1.5">{w.description}</p>
-        )}
-        <p className="text-xs text-gray-500 mt-3">
-          {data.participants.length} participant
-          {data.participants.length === 1 ? "" : "s"}
-          {w.launchedAt
-            ? ` · launched ${new Date(w.launchedAt).toLocaleDateString()}`
-            : ""}
-        </p>
-      </div>
-
-      <div className="bg-white border border-dashed border-gray-200 rounded-2xl p-8 text-center text-sm text-gray-500">
-        Cockpit is wired up in the next chunk — full participant table with
-        invite-status, retry, and soft-delete.
-      </div>
-    </main>
-  );
+  return <Cockpit workshopId={workshopId} />;
 }

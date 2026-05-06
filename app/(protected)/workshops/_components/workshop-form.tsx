@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation } from "convex/react";
+import { useAction, useMutation } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -11,6 +11,7 @@ import {
   parseBulkParticipants,
   type ParsedParticipant,
 } from "@/lib/parse-participants";
+import { LaunchDialog } from "./launch-dialog";
 
 const DEFAULT_SUBJECT =
   "You're invited to a card sorting workshop: {{workshopName}}";
@@ -112,10 +113,12 @@ export function WorkshopForm({
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [launchOpen, setLaunchOpen] = useState(false);
 
   const createWorkshop = useMutation(api.workshops.create);
   const updateWorkshop = useMutation(api.workshops.update);
   const addParticipant = useMutation(api.participants.add);
+  const addAndInviteParticipant = useAction(api.participants.addAndInvite);
   const removeParticipant = useMutation(api.participants.remove);
   const updateParticipantMutation = useMutation(api.participants.update);
 
@@ -277,12 +280,23 @@ export function WorkshopForm({
       }
       for (const p of participants) {
         if (!p.serverId) {
-          await addParticipant({
-            workshopId: original._id,
-            email: p.email,
-            name: p.name,
-            role: p.role,
-          });
+          if (isActive) {
+            // Post-launch additions need an invite email; the action wraps
+            // participants.add and sends in one call.
+            await addAndInviteParticipant({
+              workshopId: original._id,
+              email: p.email,
+              name: p.name,
+              role: p.role,
+            });
+          } else {
+            await addParticipant({
+              workshopId: original._id,
+              email: p.email,
+              name: p.name,
+              role: p.role,
+            });
+          }
         } else if (
           !removedIds.has(p.serverId) &&
           (p.name !== p.originalName || p.role !== p.originalRole)
@@ -758,14 +772,31 @@ export function WorkshopForm({
             </Button>
             <Button
               type="button"
-              disabled
-              title="Launch flow ships in the next chunk"
+              disabled={isNew || isActive || saving}
+              onClick={() => setLaunchOpen(true)}
+              title={
+                isNew
+                  ? "Save the draft first, then launch."
+                  : isActive
+                    ? "Workshop is already live."
+                    : "Send invites and start Phase 1."
+              }
             >
               Launch workshop
             </Button>
           </div>
         </div>
       </div>
+
+      {!isNew && !isActive && initialData && (
+        <LaunchDialog
+          open={launchOpen}
+          onOpenChange={setLaunchOpen}
+          workshopId={initialData.workshop._id}
+          workshopName={name || initialData.workshop.name}
+          participantCount={visibleParticipants.length}
+        />
+      )}
     </main>
   );
 }

@@ -201,6 +201,36 @@ export const getForAdmin = query({
   },
 });
 
+export const getCockpit = query({
+  args: { id: v.id("workshops") },
+  handler: async (ctx, args) => {
+    const userId = await requireAdminUserId(ctx);
+    const workshop = await ctx.db.get(args.id);
+    if (!workshop) return null;
+    if (workshop.adminUserId !== userId) throw new Error("Not authorized");
+
+    const participants = await ctx.db
+      .query("participants")
+      .withIndex("by_workshop", (q) => q.eq("workshopId", workshop._id))
+      .collect();
+
+    const enriched = await Promise.all(
+      participants.map(async (p) => {
+        const logs = await ctx.db
+          .query("emailLog")
+          .withIndex("by_participant", (q) => q.eq("participantId", p._id))
+          .collect();
+        const inviteLogs = logs.filter((l) => l.emailType === "invite");
+        inviteLogs.sort((a, b) => b.sentAt - a.sentAt);
+        const latestInvite = inviteLogs[0] ?? null;
+        return { ...p, latestInvite };
+      }),
+    );
+
+    return { workshop, participants: enriched };
+  },
+});
+
 export const _startLaunch = internalMutation({
   args: { id: v.id("workshops") },
   handler: async (ctx, args) => {
