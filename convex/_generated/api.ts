@@ -6,10 +6,12 @@
  * runtime references. The stub provides:
  *   1. Type-safe FunctionReference exports derived from each Convex module's
  *      validators, so consumers get arg/return type checking before deploy.
- *   2. A null-returning Proxy at runtime so that components that read the
- *      stub (e.g. on a fresh checkout before `npx convex dev` runs) don't
- *      crash with import errors.
+ *   2. The `anyApi` runtime resolver so function references actually work
+ *      under tests (convex-test) and on a fresh checkout where convex codegen
+ *      hasn't run yet. `anyApi` returns a path-resolving Proxy, so
+ *      `api.workshops.create` evaluates to a valid FunctionReference.
  */
+import { anyApi } from "convex/server";
 import type * as hello from "../hello";
 import type * as workshops from "../workshops";
 import type * as participants from "../participants";
@@ -19,22 +21,17 @@ import type {
   FunctionReference,
 } from "convex/server";
 
-const stub: any = new Proxy(
-  {},
-  { get: () => new Proxy({}, { get: () => null }) },
-);
-
 declare const fullApi: ApiFromModules<{
   hello: typeof hello;
   workshops: typeof workshops;
   participants: typeof participants;
 }>;
 
-export const api = stub as FilterApi<
+export const api = anyApi as unknown as FilterApi<
   typeof fullApi,
   FunctionReference<any, "public">
 >;
-export const internal = stub as FilterApi<
+export const internal = anyApi as unknown as FilterApi<
   typeof fullApi,
   FunctionReference<any, "internal">
 >;

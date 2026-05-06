@@ -4,6 +4,7 @@ import {
   internalMutation,
   internalQuery,
   mutation,
+  query,
 } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
@@ -152,6 +153,73 @@ export const update = mutation({
     if (Object.keys(cleanPatch).length === 0) return;
 
     await ctx.db.patch(args.id, cleanPatch);
+  },
+});
+
+/**
+ * Public, unauthenticated. Resolves a magic-link token into one of five
+ * states. Never returns the token itself in the response — even though the
+ * caller already has it via the URL, echoing it from the server makes it
+ * easier to leak via response logs / browser caches.
+ */
+export const resolveByToken = query({
+  args: { token: v.string() },
+  handler: async (ctx, args) => {
+    const participant = await ctx.db
+      .query("participants")
+      .withIndex("by_token", (q) => q.eq("magicLinkToken", args.token))
+      .first();
+
+    if (!participant) {
+      return { state: "not_found" as const };
+    }
+
+    const workshop = await ctx.db.get(participant.workshopId);
+    if (!workshop) {
+      // Orphaned participant — shouldn't happen, but treat as not-found.
+      return { state: "not_found" as const };
+    }
+
+    if (workshop.status === "deleted") {
+      return { state: "workshop_deleted" as const };
+    }
+
+    if (workshop.status === "draft") {
+      return {
+        state: "not_launched" as const,
+        workshopName: workshop.name,
+      };
+    }
+
+    // phase1_active — gate on expiry.
+    if (
+      participant.magicLinkExpiresAt !== null &&
+      participant.magicLinkExpiresAt < Date.now()
+    ) {
+      return {
+        state: "expired" as const,
+        workshopName: workshop.name,
+      };
+    }
+
+    return {
+      state: "ok" as const,
+      workshop: {
+        _id: workshop._id,
+        name: workshop.name,
+        description: workshop.description ?? null,
+        anonymityMode: workshop.anonymityMode,
+        phase1Deadline: workshop.phaseDeadlines.phase1 ?? null,
+        launchedAt: workshop.launchedAt,
+      },
+      participant: {
+        _id: participant._id,
+        email: participant.email,
+        name: participant.name,
+        role: participant.role,
+        magicLinkExpiresAt: participant.magicLinkExpiresAt,
+      },
+    };
   },
 });
 
