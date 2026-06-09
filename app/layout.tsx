@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SortLab",
+  title: "CatAgree",
   description: "Async card sorting workshops that produce stakeholder-ready content maps.",
 };
 

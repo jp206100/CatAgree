@@ -17,7 +17,7 @@ export default function LandingPage() {
       {/* Nav */}
       <header className="fixed top-0 inset-x-0 z-10 bg-white/80 backdrop-blur border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
-          <span className="font-semibold tracking-tight text-gray-900">SortLab</span>
+          <span className="font-semibold tracking-tight text-gray-900">CatAgree</span>
           <Link
             href="/sign-in"
             className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
@@ -40,7 +40,7 @@ export default function LandingPage() {
           </h1>
 
           <p className="text-lg text-gray-500 mb-10 max-w-xl mx-auto leading-relaxed">
-            SortLab runs phased card sorting workshops on everyone&apos;s schedule —
+            CatAgree runs phased card sorting workshops on everyone&apos;s schedule —
             no live sessions, no scheduling battles. Ends with a stakeholder-ready content map.
           </p>
 
@@ -70,9 +70,9 @@ export default function LandingPage() {
       </main>
 
       <footer className="border-t border-gray-100 py-6 text-center text-xs text-gray-400">
-        © 2026 SortLab · MIT licensed ·{" "}
+        © 2026 CatAgree · MIT licensed ·{" "}
         <a
-          href="https://github.com/jp206100/sortlab"
+          href="https://github.com/jp206100/catagree"
           className="underline underline-offset-2"
           target="_blank"
           rel="noopener noreferrer"

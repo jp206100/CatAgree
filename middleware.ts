@@ -2,7 +2,7 @@ import { convexAuthNextjsMiddleware } from "@convex-dev/auth/nextjs/server";
 import { NextResponse } from "next/server";
 
 const PARTICIPANT_PATH = /^\/p\/([A-Za-z0-9_-]+)/;
-const PARTICIPANT_COOKIE = "sortlab_p";
+const PARTICIPANT_COOKIE = "catagree_p";
 const THIRTY_DAYS_SECONDS = 30 * 24 * 60 * 60;
 
 export default convexAuthNextjsMiddleware(async (request) => {

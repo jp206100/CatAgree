@@ -72,7 +72,7 @@ export default function ProtectedLayout({
             href="/dashboard"
             className="font-semibold tracking-tight text-gray-900 hover:text-gray-700"
           >
-            SortLab
+            CatAgree
           </a>
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={handleSignOut}>

@@ -1,16 +1,16 @@
-# SortLab
+# CatAgree
 
 **Card sorting workshops where the team writes the cards.**
 
 A facilitated, async tool for content architecture. Participants don't just sort a list someone else wrote. They help build it. Admins drive the group through gated phases on the team's own schedule, and the workshop ends with a validated content map ready for stakeholders.
 
-![SortLab landing page](https://raw.githubusercontent.com/jp206100/SortLab/4acaa7503c39333ba5693ec5b140239a4ce8ac62/public/blog-screenshots/hero-landing.png)
+![CatAgree landing page](https://raw.githubusercontent.com/jp206100/CatAgree/4acaa7503c39333ba5693ec5b140239a4ce8ac62/public/blog-screenshots/hero-landing.png)
 
-## Why SortLab
+## Why CatAgree
 
 Traditional card sorting tools are great at the mechanics (drag, drop, generate a dendrogram), but they treat the participant as a sorter. You learn the most from a team not by watching them sort a fixed list, but by seeing *what they think belongs on it at all*, and which items they argue over.
 
-SortLab is built around that.
+CatAgree is built around that.
 
 - **Participants contribute, they don't just sort.** Cards and categories come from the team. Surface and converge on a shared vocabulary instead of testing one you've already written.
 - **Async and phased by default.** Four gated phases run at the team's pace. No calendar Tetris. No ninety-minute Zoom marathons.
@@ -19,23 +19,23 @@ SortLab is built around that.
 
 ## A workshop, end to end
 
-A SortLab session moves through four gated phases. Each phase opens, collects input, and closes, either on a deadline you set or when you decide the group is ready to advance.
+A CatAgree session moves through four gated phases. Each phase opens, collects input, and closes, either on a deadline you set or when you decide the group is ready to advance.
 
 ### A quiet dashboard for long-running work
 
-A workshop in SortLab is a long-running thing, measured in days or weeks rather than minutes. The dashboard is built around *which session needs me right now*, not a feed of every participant action.
+A workshop in CatAgree is a long-running thing, measured in days or weeks rather than minutes. The dashboard is built around *which session needs me right now*, not a feed of every participant action.
 
-![SortLab dashboard](https://raw.githubusercontent.com/jp206100/SortLab/4acaa7503c39333ba5693ec5b140239a4ce8ac62/public/blog-screenshots/body-dashboard.png)
+![CatAgree dashboard](https://raw.githubusercontent.com/jp206100/CatAgree/4acaa7503c39333ba5693ec5b140239a4ce8ac62/public/blog-screenshots/body-dashboard.png)
 
 ### A cockpit for facilitating, not just monitoring
 
 Once a workshop is in flight, the cockpit surfaces the current phase, who has contributed, what's still outstanding, and a single primary action, usually "close this phase and advance the group."
 
-![SortLab workshop cockpit](https://raw.githubusercontent.com/jp206100/SortLab/4acaa7503c39333ba5693ec5b140239a4ce8ac62/public/blog-screenshots/body-workshop-cockpit.png)
+![CatAgree workshop cockpit](https://raw.githubusercontent.com/jp206100/CatAgree/4acaa7503c39333ba5693ec5b140239a4ce8ac62/public/blog-screenshots/body-workshop-cockpit.png)
 
 ## Status
 
-SortLab is being built in the open. Authentication, the dashboard shell, and the workshop cockpit are in place; participant-facing flows and export are next. Read [the first-look post](./blog-drafts/first-look-at-sortlab.md) for the longer story behind the project.
+CatAgree is being built in the open. Authentication, the dashboard shell, and the workshop cockpit are in place; participant-facing flows and export are next. Read [the first-look post](./blog-drafts/first-look-at-catagree.md) for the longer story behind the project.
 
 ## Built with
 
