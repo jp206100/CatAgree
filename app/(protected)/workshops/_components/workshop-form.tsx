@@ -322,7 +322,7 @@ export function WorkshopForm({
   const previewEmail =
     visibleParticipants[0]?.email || "alice@example.com";
   const previewWorkshopName = name || "Untitled workshop";
-  const previewMagicLink = `https://sortlab.app/p/${PREVIEW_TOKEN}`;
+  const previewMagicLink = `https://catagree.app/p/${PREVIEW_TOKEN}`;
 
   function applyTokens(s: string): string {
     return s

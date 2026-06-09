@@ -7,7 +7,7 @@ export default function SignInPage() {
       <header className="bg-white border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center">
           <Link href="/" className="font-semibold tracking-tight text-gray-900">
-            SortLab
+            CatAgree
           </Link>
         </div>
       </header>

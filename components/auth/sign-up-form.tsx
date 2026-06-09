@@ -53,7 +53,7 @@ export function SignUpForm() {
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 w-full max-w-sm">
       <div className="mb-6 text-center">
         <h1 className="text-xl font-semibold text-gray-900 mb-1">Create an account</h1>
-        <p className="text-sm text-gray-500">Admin access to SortLab</p>
+        <p className="text-sm text-gray-500">Admin access to CatAgree</p>
       </div>
 
       {/* Google */}

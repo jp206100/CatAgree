@@ -46,7 +46,7 @@ export function SignInForm() {
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 w-full max-w-sm">
       <div className="mb-6 text-center">
         <h1 className="text-xl font-semibold text-gray-900 mb-1">Admin sign in</h1>
-        <p className="text-sm text-gray-500">Continue to your SortLab dashboard</p>
+        <p className="text-sm text-gray-500">Continue to your CatAgree dashboard</p>
       </div>
 
       {/* Google */}
